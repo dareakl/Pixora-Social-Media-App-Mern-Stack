@@ -7,6 +7,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 const golbalErrorHandler = require("./controllers/errorController");
 const path = require("path");
 const AppError = require("./utils/appError");
+const userRouter = require("./routes/userRoutes");
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.json({ limit: "10kb" }));
 app.use(mongoSanitize());
 
 // Routes for Users
+app.use("/api/v1/users", userRouter);
 
 // Routes for posts
 
