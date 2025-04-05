@@ -186,3 +186,70 @@ exports.logout = catchAsync(async (req, res, next) => {
     message: "Logged Out Successfully",
   });
 });
+
+exports.forgetPassword = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new AppError("No user found", 404));
+  }
+  const otp = generateOtp();
+  const resetExpires = Date.now() + 300000; //5 min
+
+  user.resetPasswordOTP = otp;
+  user, (restPasswordOTPExpires = resetExpires);
+
+  await user.save({ validateBeforeSave: false });
+
+  const htmlTemplate = loadTemplate("otpTemplate.hbs", {
+    title: "Reset Password OTP",
+    username: user.username,
+    otp,
+    message: "Your Password reset otp is",
+  });
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password reset OTP (Valid for 5 min)",
+      html: htmlTemplate,
+    });
+    res.status(200).json({
+      status: "success",
+      message: "Password reset otp is send to your email",
+    });
+  } catch (error) {
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    return next(
+      new AppError("There was an error sending the email.Try again later!", 500)
+    );
+  }
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { email, otp, password, passwordConfirm } = req.body;
+  console.log("HHHHHHH", req.body);
+  const user = await User.findOne({
+    email,
+    resetPasswordOTP: otp,
+    resetPasswordOTPExpires: { $gt: Date.now() },
+  });
+  console.log("DATA", user);
+  if (!user) {
+    console.log("User not found , checl the following");
+    console.log("Email", email);
+    console.log("OTP", otp);
+    console.log("current time", Date.now());
+    return next(new AppError("No user found", 400));
+  }
+  user.password = password;
+  user.passwordConfirm = passwordConfirm;
+  user.resetPasswordOTP = undefined;
+  user.resetPasswordOTPExpires = undefined;
+
+  await user.save();
+  createSendToken(user, 200, res, "Password Rest Successfully");
+});
