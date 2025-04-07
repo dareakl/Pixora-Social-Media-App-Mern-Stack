@@ -10,7 +10,12 @@ const {
   changePassword,
 } = require("../controllers/authController");
 const isAuthenticated = require("../middleware/isAuthenticated");
-const { getProfile, editProfile } = require("../controllers/userController");
+const {
+  getProfile,
+  editProfile,
+  suggestedUser,
+  followUnfollow,
+} = require("../controllers/userController");
 const upload = require("../middleware/multer");
 
 const router = express.Router();
@@ -35,3 +40,6 @@ router.post(
 );
 
 module.exports = router;
+
+router.get("/suggested-user", isAuthenticated, suggestedUser);
+router.post("/follow-unfollow/:id", isAuthenticated, followUnfollow);
