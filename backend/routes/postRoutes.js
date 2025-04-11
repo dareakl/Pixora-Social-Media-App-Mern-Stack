@@ -1,7 +1,12 @@
 const express = require("express");
 const isAuthenticated = require("../middleware/isAuthenticated");
 const upload = require("../middleware/multer");
-const { createPost, getAllPost } = require("../controllers/postController");
+const {
+  createPost,
+  getAllPost,
+  getUserPosts,
+  saveOrUnSavePost,
+} = require("../controllers/postController");
 
 const router = express.Router();
 
@@ -14,5 +19,7 @@ router.post(
 );
 
 router.get("/all", getAllPost);
+router.get("/user-post:id", getUserPosts);
+router.post("/save-unsave-post/:postId", isAuthenticated, saveOrUnSavePost);
 
 module.exports = router;

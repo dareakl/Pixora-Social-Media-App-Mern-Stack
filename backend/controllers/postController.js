@@ -73,3 +73,57 @@ exports.getAllPost = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getUserPosts = catchAsync(async (req, res, next) => {
+  const userId = req.params.id;
+
+  const posts = await Post.find({ user: userId })
+    .populate({
+      path: "comments",
+      select: "text user",
+      populate: {
+        path: "user",
+        select: "username profilePicture",
+      },
+    })
+    .sort({ createdAt: -1 });
+
+  return res.status(200).json({
+    status: "Success",
+    result: posts.length,
+    data: {
+      posts,
+    },
+  });
+});
+
+exports.saveOrUnSavePost = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const postId = req.params.id;
+
+  const user = await User.findById(userId);
+  if (!user) return next(new AppError("User not found", 404));
+
+  const isPostSave = user.savedPosts.includes(postId);
+  if (isPostSave) {
+    user.savedPosts.pull(postId);
+    await user.save({ validateBeforeSave: false });
+    return res.status(200).json({
+      status: "success",
+      message: "post unsaved successfully",
+      data: {
+        user,
+      },
+    });
+  } else {
+    user.savedPosts.push(postId);
+    await user.save({ validateBeforeSave: false });
+    return res.status(200).json({
+      status: "success",
+      message: "Post Saved successfully",
+      data: {
+        user,
+      },
+    });
+  }
+});
