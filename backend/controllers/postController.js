@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const sharp = require("sharp");
-const { uploadToCloudinary } = require("../utils/cloudinary");
+const { uploadToCloudinary, cloudinary } = require("../utils/cloudinary");
 const Post = require("../models/postModel");
 
 exports.createPost = catchAsync(async (req, res, next) => {
@@ -99,7 +99,7 @@ exports.getUserPosts = catchAsync(async (req, res, next) => {
 
 exports.saveOrUnSavePost = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
-  const postId = req.params.id;
+  const postId = req.params.postId;
 
   const user = await User.findById(userId);
   if (!user) return next(new AppError("User not found", 404));
@@ -126,4 +126,36 @@ exports.saveOrUnSavePost = catchAsync(async (req, res, next) => {
       },
     });
   }
+});
+
+exports.deletePost = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const post = await Post.findById(id).populate("user");
+  if (!post) {
+    return next(new AppError("Post not found", 404));
+  }
+  if (post.user.id.toString() !== userId.toString()) {
+    return next(
+      new AppError("You are not authorized to delete this post", 403)
+    );
+  }
+  //remove the post from user posts
+  await User.updateOne({ _id: userId }, { $pull: { posts: id } });
+  //remove this post from users save list
+  await User.updateMany({ savedPosts: id }, { $pull: { savedPosts: id } });
+  //remove the comments of this post
+  await Comment.deleteMany({ post: id });
+
+  //remove image from cloudinary
+  if (post.image.publicId) {
+    await cloudinary.uploader.destroy(post.image.publicId);
+  }
+  // remove the post
+  await Post.findByIdAndDelete(id);
+  res.status(200).json({
+    status: "success",
+    message: "Post deleted successfully",
+  });
 });
