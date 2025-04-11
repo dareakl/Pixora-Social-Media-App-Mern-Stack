@@ -8,6 +8,7 @@ const golbalErrorHandler = require("./controllers/errorController");
 const path = require("path");
 const AppError = require("./utils/appError");
 const userRouter = require("./routes/userRoutes");
+const postRouter = require("./routes/postRoutes");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(mongoSanitize());
 
 // Routes for Users
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/posts", postRouter);
 
 // Routes for posts
 
