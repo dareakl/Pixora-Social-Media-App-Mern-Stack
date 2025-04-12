@@ -159,3 +159,35 @@ exports.deletePost = catchAsync(async (req, res, next) => {
     message: "Post deleted successfully",
   });
 });
+
+exports.likeOrDislikePost = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const post = await Post.findById(id);
+
+  if (!post) return next(new AppError("Post not found", 404));
+  const isLiked = post.likes.includes(userId);
+
+  if (isLiked) {
+    await Post.findByIdAndUpdate(
+      id,
+      { $pull: { likes: userId } },
+      { new: true }
+    );
+    return res.status(200).json({
+      status: "Success",
+      message: "Post disliked successfully",
+    });
+  } else {
+    await Post.fundByIdAndUpdate(
+      id,
+      { $addToSet: { likes: userId } },
+      { new: true }
+    );
+    return res.status(200).json({
+      status: "Success",
+      message: "Post liked successfully",
+    });
+  }
+});

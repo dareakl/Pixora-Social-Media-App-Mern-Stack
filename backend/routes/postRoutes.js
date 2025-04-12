@@ -7,6 +7,7 @@ const {
   getUserPosts,
   saveOrUnSavePost,
   deletePost,
+  likeOrDislikePost,
 } = require("../controllers/postController");
 
 const router = express.Router();
@@ -23,5 +24,6 @@ router.get("/all", getAllPost);
 router.get("/user-post:id", getUserPosts);
 router.post("/save-unsave-post/:postId", isAuthenticated, saveOrUnSavePost);
 router.delete("/delete-post/:id", isAuthenticated, deletePost);
+router.post("/like-dislike/:id", isAuthenticated, likeOrDislikePost);
 
 module.exports = router;
