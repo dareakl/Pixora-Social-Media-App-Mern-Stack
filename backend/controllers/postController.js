@@ -191,3 +191,35 @@ exports.likeOrDislikePost = catchAsync(async (req, res, next) => {
     });
   }
 });
+
+exports.addComment = catchAsync(async (req, res, next) => {
+  const { id: postId } = req.params;
+  const userId = req.user._id;
+
+  const { text } = req.body;
+
+  const post = await Post.findById(postId);
+
+  if (!post) return next(new AppError("Comment text is required", 400));
+
+  const comment = await Comment.create({
+    text,
+    user: userId,
+    createdAt: Date.now(),
+  });
+  post.comments.push(comment);
+
+  await post.save({ validateBeforeSave: false });
+
+  await comment.populate({
+    path: "user",
+    select: "username profilePicture bio",
+  });
+  res.status(200).json({
+    status: "success",
+    message: "Comment added successfully",
+    data: {
+      comment,
+    },
+  });
+});
